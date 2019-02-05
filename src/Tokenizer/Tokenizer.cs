@@ -10,6 +10,7 @@ namespace MiScript
     {
         private Dictionary<string, Tokens> patterns = new Dictionary<string, Tokens>()
         {
+            { "^stop", Tokens.Stop },
             { "^end", Tokens.End },
             { "^if", Tokens.If },
             { "^then", Tokens.Then },

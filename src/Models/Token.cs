@@ -16,7 +16,8 @@ namespace MiScript.Models
         Number = 7,
         Boolean = 8,
         Argument = 9,
-        End = 10
+        End = 10,
+        Stop = 11
     }
 
     /// <summary>

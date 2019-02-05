@@ -10,7 +10,7 @@ namespace MiScript.Parser
     {
         private IEnumerable<Token> _tokens;
         private int _index = 0;
-
+        private bool _shouldStop = false;
         private Token current => _tokens.ElementAtOrDefault(_index);
         private Token previous => _tokens.ElementAtOrDefault(_index - 1);
 
@@ -71,7 +71,12 @@ namespace MiScript.Parser
         public string Parse(Dictionary<string, string> context)
         {
             _index = 0;
-            return Body(null, context);
+            string value = null;
+            while (_index < _tokens.Count() && !_shouldStop)
+            {
+                value = Body(null, context);
+            }
+            return value;
         }
 
         private string Body(string value, Dictionary<string, string> context)
@@ -81,7 +86,10 @@ namespace MiScript.Parser
                 if (Expression(context))
                 {
                     Expect(Tokens.Then);
-                    value = Body(value, context);
+                    while (current.TokenType != Tokens.End)
+                    {
+                        value = Body(value, context);
+                    }
                     Expect(Tokens.End);
                 }
                 else
@@ -89,18 +97,22 @@ namespace MiScript.Parser
                     do
                     {
                         _index++;
-                    } while (previous.TokenType != Tokens.End);
+                    } while (previous.TokenType != Tokens.End || previous.TokenType != Tokens.Else);
                 }
             }
-
-            if (Accept(Tokens.Name))
+            else if (Accept(Tokens.Name))
             {
                 if (previous.Value == "say")
                 {
-                    return current.Value;
+                    Expect(Tokens.String);
+                    value = previous.Value;
                 }
             }
-
+            else if(Accept(Tokens.Stop))
+            {
+                _shouldStop = true;
+                return value;
+            }
             return value;
         }
     }
