@@ -3,9 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MiScript.Parser
 {
+
+
     public class Parser
     {
         private IEnumerable<Token> _tokens;
@@ -38,21 +41,37 @@ namespace MiScript.Parser
             return true;
         }
 
-        private string Var(Dictionary<string, string> context)
+        private string Var(Dictionary<string, object> context)
         {
             if (Accept(Tokens.Argument))
             {
-                return context[previous.Value];
+                return context[previous.Value].ToString();
             }
 
-            if (Accept(Tokens.Boolean) || Accept(Tokens.Number) || Accept(Tokens.String))
+            if(Accept(Tokens.String))
+            {
+                return Regex.Replace(previous.Value, "\\$\\[([a-zA-Z0-9.]+)\\]", (m) => {
+                    if(m.Groups.Count < 2)
+                    {
+                        return m.Value;
+                    }
+
+                    if(context.TryGetValue(m.Groups[1].Value, out object value))
+                    {
+                        return value.ToString();
+                    }
+                    return m.Value;
+                });
+            }
+
+            if (Accept(Tokens.Boolean) || Accept(Tokens.Number))
             {
                 return previous.Value;
             }
             throw new Exception("Expected var!");
         }
 
-        private bool Expression(Dictionary<string, string> context)
+        private bool Expression(Dictionary<string, object> context)
         {
             string v1 = Var(context);
             if (Accept(Tokens.Equals))
@@ -68,7 +87,7 @@ namespace MiScript.Parser
             throw new Exception("Expected operator!");
         }
 
-        public string Parse(Dictionary<string, string> context)
+        public string Parse(Dictionary<string, object> context)
         {
             _index = 0;
             string value = null;
@@ -79,33 +98,57 @@ namespace MiScript.Parser
             return value;
         }
 
-        private string Body(string value, Dictionary<string, string> context)
+        private string IfStatement(string value, Dictionary<string, object> context)
+        {
+            if (Expression(context))
+            {
+                Expect(Tokens.Then);
+                while (current.TokenType != Tokens.End && !_shouldStop)
+                {
+                    value = Body(value, context);
+                }
+
+                SkipToNext(Tokens.End);
+            }
+            else
+            {
+                SkipToNext(Tokens.Else, Tokens.End);
+                if (Accept(Tokens.Else))
+                {
+                    value = ElseStatement(value, context);
+                }
+            }
+            return value;
+        }
+
+        private string ElseStatement(string value, Dictionary<string, object> context)
         {
             if (Accept(Tokens.If))
             {
-                if (Expression(context))
+                value = IfStatement(value, context);
+            }
+            else
+            {
+                while (current.TokenType != Tokens.End && current.TokenType != Tokens.Else)
                 {
-                    Expect(Tokens.Then);
-                    while (current.TokenType != Tokens.End)
-                    {
-                        value = Body(value, context);
-                    }
-                    Expect(Tokens.End);
+                    value = Body(value, context);
                 }
-                else
-                {
-                    do
-                    {
-                        _index++;
-                    } while (previous.TokenType != Tokens.End || previous.TokenType != Tokens.Else);
-                }
+            }
+            return value;
+        }
+
+        private string Body(string value, Dictionary<string, object> context)
+        {
+            if (Accept(Tokens.If))
+            {
+                value = IfStatement(value, context);
+                Expect(Tokens.End);
             }
             else if (Accept(Tokens.Name))
             {
                 if (previous.Value == "say")
                 {
-                    Expect(Tokens.String);
-                    value = previous.Value;
+                    value = Var(context);
                 }
             }
             else if(Accept(Tokens.Stop))
@@ -113,7 +156,19 @@ namespace MiScript.Parser
                 _shouldStop = true;
                 return value;
             }
+            else
+            {
+                _shouldStop = true;
+            }
             return value;
+        }
+
+        private void SkipToNext(params Tokens[] token)
+        {
+            while(current.TokenType != Tokens.None && !token.Any(x => x == current.TokenType))
+            {
+                _index++;
+            }
         }
     }
 }

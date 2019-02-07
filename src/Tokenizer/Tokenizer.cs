@@ -18,10 +18,10 @@ namespace MiScript
             { "^=", Tokens.Equals},
             { "^!=", Tokens.NotEquals },
             { "^\"(.*?)\"", Tokens.String },
-            { "^([a-zA-Z_-]+)", Tokens.Name },
             { "^([0-9]+)", Tokens.Number },
             { "^(true|false)", Tokens.Boolean },
-            { "^\\$([a-zA-Z_-]+)", Tokens.Argument }
+            { "^\\$([a-zA-Z_-]+)", Tokens.Argument },
+            { "^([a-zA-Z_\\.]+)", Tokens.Name },
         };  
 
         public IEnumerable<Token> Tokenize(string script)
