@@ -53,6 +53,15 @@ namespace MiScript.Models
             }
             return new ScriptPackage { strValues = valueCollection.ToArray(), tokens = tokenCollection.ToArray() };
         }
+        public static IEnumerable<Token> Unpack(ScriptPackage package)
+        {
+            List<Token> tokenCollection = new List<Token>();
+            foreach(var token in package.tokens)
+            {
+                tokenCollection.Add(new Token { TokenType = token.token, Value = token.valueIndex.HasValue ? package.strValues[token.valueIndex.Value] : "" });
+            }
+            return tokenCollection;
+        }
 
         public static string ToString(ScriptPackage pack, bool pretty = false)
         {
