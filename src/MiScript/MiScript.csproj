@@ -2,6 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>0.1.0</Version>
+    <Authors>Velddev</Authors>
+    <Company>Velddev</Company>
+    <Product>Miki</Product>
+    <Description>Tiny C#-only language interpreter.</Description>
+    <PackageProjectUrl>https://github.com/mikibot/miscript</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mikibot/miscript</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>miki scripting language</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
