@@ -20,7 +20,7 @@ namespace MiScript
             { "^\"(.*?)\"", Tokens.String },
             { "^([0-9]+)", Tokens.Number },
             { "^(true|false)", Tokens.Boolean },
-            { "^\\$([a-zA-Z_-]+)", Tokens.Argument },
+            { "^\\$([a-zA-Z_\\-\\.]+)", Tokens.Argument },
             { "^([a-zA-Z_\\.]+)", Tokens.Name },
         };  
 
