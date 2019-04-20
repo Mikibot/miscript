@@ -15,6 +15,8 @@ namespace MiScript
             { "^if", Tokens.If },
             { "^then", Tokens.Then },
             { "^else", Tokens.Else },
+            { "^var", Tokens.Var },
+            { "^is", Tokens.Assigns },
             { "^=", Tokens.Equals},
             { "^!=", Tokens.NotEquals },
             { "^\"(.*?)\"", Tokens.String },

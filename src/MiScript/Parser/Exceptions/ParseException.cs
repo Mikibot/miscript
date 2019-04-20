@@ -1,19 +1,25 @@
 ﻿using Miki.Localization;
 using Miki.Localization.Exceptions;
+using MiScript.Parser.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace MiScript.Parser.Exceptions
 {
-    public class ParseException : LocalizedException
+    internal class ParseException : LocalizedException
     {
-        public override IResource LocaleResource => new LanguageResource("error_miscript_parse", Message);
+        public override IResource LocaleResource 
+            => new LanguageResource("error_miscript_parse", _message);
 
-        public ParseException(string message)
-            
+        protected ParseContext _context;
+
+        private string _message;
+
+        public ParseException(ParseContext context, string message)
         {
-
+            _message = message;
+            _context = context;
         }
     }
 }

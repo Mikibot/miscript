@@ -19,7 +19,9 @@ namespace MiScript.Models
         Boolean = 9,
         Argument = 10,
         End = 11,
-        Stop = 12
+        Stop = 12,
+        Var = 13,
+        Assigns = 14,
     }
 
     /// <summary>
