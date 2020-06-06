@@ -25,6 +25,9 @@ namespace MiScript.Ast
                 case "say":
                     argumentCount = 1;
                     break;
+                case "stop":
+                    context.Add(Tokens.Stop);
+                    return;
                 default:
                     context.AddWarning(this, $"The method {Name} does not exists, did you mean 'say'?");
                     return;

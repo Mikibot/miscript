@@ -51,5 +51,12 @@ namespace MiScript.Language
         {
             return new ExpressionStatement(context, context.expression().Visit(_expressionVisitor));
         }
+
+        public override Statement VisitSetStatement(MiScriptParser.SetStatementContext context)
+        {
+            return new VariableStatement(context,
+                context.singleIdentifier().GetText(),
+                context.expression()?.Visit(_expressionVisitor));
+        }
     }
 }

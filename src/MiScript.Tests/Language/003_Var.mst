@@ -1,0 +1,5 @@
+﻿--SCRIPT--
+var user = "Miki"
+say "Hello $user!"
+--EXPECT--
+Hello Miki!

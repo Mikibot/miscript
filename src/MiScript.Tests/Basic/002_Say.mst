@@ -1,0 +1,6 @@
+﻿--SCRIPT--
+say "Hello"
+say "world"
+--EXPECT--
+Hello
+world

@@ -1,0 +1,6 @@
+﻿--SCRIPT--
+say "This message will be shown!"
+stop
+say "However, this message will be ignored!"
+--EXPECT--
+This message will be shown!

@@ -60,11 +60,9 @@ namespace MiScript.Parser
             
             if (Accept(Tokens.Argument, out token))
             {
-                if(context.HasVariableOnStack(token.Value))
-                {
-                    return context.GetVariableFromStack(token.Value);
-                }
-                value = context.contextVariables[token.Value].ToString();
+                value = context.HasVariableOnStack(token.Value)
+                    ? context.GetVariableFromStack(token.Value)
+                    : context.contextVariables[token.Value].ToString();
             }
             else if (Accept(Tokens.String, out token))
             {
@@ -231,20 +229,16 @@ namespace MiScript.Parser
         {
             while(_current.TokenType != Tokens.None && token.All(x => x != _current.TokenType))
             {
-                _index++;
+                Next();
             }
-            
-            UpdateCurrent();
         }
         
         private void SkipToNext(Tokens token)
         {
             while(_current.TokenType != Tokens.None && token != _current.TokenType)
             {
-                _index++;
+                Next();
             }
-            
-            UpdateCurrent();
         }
     }
 }

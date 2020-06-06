@@ -26,7 +26,7 @@ expressionStatement
     ;
 
 setStatement
-    : Var singleIdentifier (Is | Equal) (callStatement | expression)
+    : Var IdentifierStart? singleIdentifier (Is | Equal) (callStatement | expression)
     ;
 
 callStatement
