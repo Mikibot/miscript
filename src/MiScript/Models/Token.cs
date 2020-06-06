@@ -1,4 +1,5 @@
-﻿using ProtoBuf;
+﻿using System;
+using ProtoBuf;
 
 namespace MiScript.Models
 {
@@ -26,7 +27,7 @@ namespace MiScript.Models
     /// Tokenized token for parsing.
     /// </summary>
     [ProtoContract]
-    public struct Token
+    public readonly struct Token : IEquatable<Token>
     {
         public Token(Tokens tokenType, string value = null)
         {
@@ -38,13 +39,13 @@ namespace MiScript.Models
         /// Type of the token.
         /// </summary>
         [ProtoMember(1)]
-        public Tokens TokenType;
+        public Tokens TokenType { get; }
 
         /// <summary>
         /// Value of the token if needed.
         /// </summary>
         [ProtoMember(2)]
-        public string Value;
+        public string Value { get; }
 
         public override string ToString()
         {
@@ -58,7 +59,7 @@ namespace MiScript.Models
             return $"[{value}]";
         }
 
-        private bool Equals(Token other)
+        public bool Equals(Token other)
         {
             return TokenType == other.TokenType && Value == other.Value;
         }
