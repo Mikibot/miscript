@@ -3,102 +3,128 @@ using MiScript.Parser.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace MiScript.Parser
 {
-
-
     public class Parser
     {
-        private IEnumerable<Token> _tokens;
+        private readonly List<Token> _tokens;
         private int _index = 0;
         private bool _shouldStop = false;
-        private Token current => _tokens.ElementAtOrDefault(_index);
-        private Token previous => _tokens.ElementAtOrDefault(_index - 1);
+        private Token _current;
 
-        public Parser(IEnumerable<Token> tokens)
+        public Parser(List<Token> tokens)
         {
             _tokens = tokens;
+            UpdateCurrent();
         }
 
         private bool Accept(Tokens type)
         {
-            if (current.TokenType == type)
+            if (_current.TokenType == type)
             {
-                _index++;
+                Next();
                 return true;
             }
             return false;
         }
 
-        private bool Expect(Tokens type)
+        private bool Accept(Tokens type, out Token token)
         {
-            if (!Accept(type))
+            if (_current.TokenType == type)
             {
-                throw new Exception($"Expected '{type}' on token {_index} ({current.Value}), but received {current.TokenType}");
+                token = _current;
+                Next();
+                return true;
             }
-            return true;
+
+            token = default;
+            return false;
+        }
+
+        private Token Expect(Tokens type)
+        {
+            if (!Accept(type, out var token))
+            {
+                throw new Exception($"Expected '{type}' on token {_index} ({_current.Value}), but received {_current.TokenType}");
+            }
+
+            return token;
         }
 
         private string Var(ParseContext context)
         {
-            if (Accept(Tokens.Argument))
+            Token token;
+            string value;
+            
+            if (Accept(Tokens.Argument, out token))
             {
-                if(context.HasVariableOnStack(previous.Value))
+                value = context.HasVariableOnStack(token.Value)
+                    ? context.GetVariableFromStack(token.Value)
+                    : context.contextVariables[token.Value].ToString();
+            }
+            else if (Accept(Tokens.String, out token))
+            {
+                if (!token.Value.Contains("$"))
                 {
-                    return context.GetVariableFromStack(previous.Value);
+                    value = token.Value;
                 }
-                return context.contextVariables[previous.Value].ToString();
-            }
-
-            if (Accept(Tokens.String))
-            {
-                return Regex.Replace(previous.Value, "\\$\\[([a-zA-Z0-9.]+)\\]", (m) =>
+                else
                 {
-                    if (m.Groups.Count < 2)
+                    value = Regex.Replace(token.Value, "\\$\\[([a-zA-Z0-9.]+)\\]", (m) =>
                     {
-                        return m.Value;
-                    }
+                        if (m.Groups.Count < 2)
+                        {
+                            return m.Value;
+                        }
 
-                    if (context.contextVariables
-                        .TryGetValue(m.Groups[1].Value, out object value))
-                    {
-                        return value.ToString();
-                    }
+                        if (context.contextVariables
+                            .TryGetValue(m.Groups[1].Value, out var variable))
+                        {
+                            return variable.ToString();
+                        }
 
-                    var stackVar = context.stackVariables.FirstOrDefault(x => x.name == m.Groups[1].Value);
-                    if (stackVar.value != null)
-                    {
-                        return stackVar.value.ToString();
-                    }
+                        var stackVar = context.stackVariables
+                            .FirstOrDefault(x => x.name == m.Groups[1].Value);
+                        
+                        if (stackVar.value != null)
+                        {
+                            return stackVar.value.ToString();
+                        }
 
-                    return "$deleted";
-                });
+                        return "$deleted";
+                    });
+                }
             }
-
-            if (Accept(Tokens.Boolean) || Accept(Tokens.Number))
+            else if (Accept(Tokens.Boolean, out token) || Accept(Tokens.Number, out token))
             {
-                return previous.Value;
+                value = token.Value;
             }
-            throw new Exception("Expected var!");
+            else
+            {
+                throw new Exception("Expected var!");
+            }
+
+            if (Accept(Tokens.Equals))
+            {
+                value = value == Var(context) ? "true" : "false";
+            }
+            else if (Accept(Tokens.NotEquals))
+            {
+                value = value != Var(context) ? "true" : "false";
+            }
+            else if (Accept(Tokens.Add))
+            {
+                value += Var(context);
+            }
+
+            return value;
         }
 
         private bool Expression(ParseContext context)
         {
-            string v1 = Var(context);
-            if (Accept(Tokens.Equals))
-            {
-                return v1 == Var(context);
-            }
-
-            if (Accept(Tokens.NotEquals))
-            {
-                return v1 != Var(context);
-            }
-
-            throw new Exception("Expected operator!");
+            return Var(context) == "true";
         }
 
         public string Parse(Dictionary<string, object> contextVariables)
@@ -106,7 +132,7 @@ namespace MiScript.Parser
             ParseContext context = new ParseContext(contextVariables);
 
             _index = 0;
-            while (_index < _tokens.Count() && !_shouldStop)
+            while (_index < _tokens.Count && !_shouldStop)
             {
                 Body(context);
             }
@@ -119,7 +145,7 @@ namespace MiScript.Parser
             {
                 Expect(Tokens.Then);
                 context.PushStack();
-                while (current.TokenType != Tokens.End && !_shouldStop)
+                while (_current.TokenType != Tokens.End && !_shouldStop)
                 {
                     Body(context);
                 }
@@ -145,7 +171,7 @@ namespace MiScript.Parser
             }
             else
             {
-                while (current.TokenType != Tokens.End && current.TokenType != Tokens.Else && !_shouldStop)
+                while (_current.TokenType != Tokens.End && _current.TokenType != Tokens.Else && !_shouldStop)
                 {
                     Body(context);
                 }
@@ -162,8 +188,8 @@ namespace MiScript.Parser
             }
             else if (Accept(Tokens.Var))
             {
-                Expect(Tokens.Name);
-                var name = previous.Value;
+                var token = Expect(Tokens.Name);
+                var name = token.Value;
                 string value = null;
                 if (Accept(Tokens.Assigns))
                 {
@@ -171,9 +197,9 @@ namespace MiScript.Parser
                 }
                 context.CreateStackVariable(name, value);
             }
-            else if (Accept(Tokens.Name))
+            else if (Accept(Tokens.Name, out var token))
             {
-                if (previous.Value == "say")
+                if (token.Value == "say")
                 {
                     context.responses.Add(Var(context));
                 }
@@ -181,7 +207,6 @@ namespace MiScript.Parser
             else if (Accept(Tokens.Stop))
             {
                 _shouldStop = true;
-                return;
             }
             else
             {
@@ -189,11 +214,30 @@ namespace MiScript.Parser
             }
         }
 
+        private void UpdateCurrent()
+        {
+            _current = _index >= 0 && _index < _tokens.Count ? _tokens[_index] : default;
+        }
+        
+        private void Next()
+        {
+            _index++;
+            UpdateCurrent();
+        }
+
         private void SkipToNext(params Tokens[] token)
         {
-            while(current.TokenType != Tokens.None && !token.Any(x => x == current.TokenType))
+            while(_current.TokenType != Tokens.None && token.All(x => x != _current.TokenType))
             {
-                _index++;
+                Next();
+            }
+        }
+        
+        private void SkipToNext(Tokens token)
+        {
+            while(_current.TokenType != Tokens.None && token != _current.TokenType)
+            {
+                Next();
             }
         }
     }

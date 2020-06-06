@@ -1,0 +1,10 @@
+﻿--SCRIPT--
+if $author = "Veld" then
+    say "Hello Veld!"
+else
+    say "Wait, you're not Veld!"
+end
+--MODEL--
+author: Veld
+--EXPECT--
+Hello Veld!

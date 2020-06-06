@@ -1,9 +1,6 @@
 ﻿using Miki.Localization;
 using Miki.Localization.Exceptions;
 using MiScript.Parser.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiScript.Parser.Exceptions
 {

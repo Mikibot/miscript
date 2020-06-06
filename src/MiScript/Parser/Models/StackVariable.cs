@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiScript.Parser.Models
+﻿namespace MiScript.Parser.Models
 {
     public struct StackVariable
     {

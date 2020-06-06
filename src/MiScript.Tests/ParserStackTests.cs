@@ -17,7 +17,7 @@ namespace MiScript.Tests
             context.CreateStackVariable("test", 4);
             context.PopStack();
 
-            Assert.Equal(false, context.HasVariableOnStack("test"));
+            Assert.False(context.HasVariableOnStack("test"));
         }
 
         [Fact]

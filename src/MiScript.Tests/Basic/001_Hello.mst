@@ -1,0 +1,6 @@
+﻿--SCRIPT--
+say "Hello $author, how's life?"
+--MODEL--
+author: Miki
+--EXPECT--
+Hello Miki, how's life?
