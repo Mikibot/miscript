@@ -1,5 +1,4 @@
 ﻿using ProtoBuf;
-using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Text;
@@ -101,6 +100,11 @@ namespace MiScript.Models
                     case Tokens.Boolean:
                     {
                         b.Append(pack.strValues[token.valueIndex.Value]);
+                    } break;
+
+                    case Tokens.Add:
+                    {
+                        b.Append(" + ");
                     } break;
 
                     case Tokens.Argument:

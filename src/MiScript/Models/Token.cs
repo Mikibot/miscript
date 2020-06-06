@@ -1,7 +1,4 @@
 ﻿using ProtoBuf;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiScript.Models
 {
@@ -22,6 +19,7 @@ namespace MiScript.Models
         Stop = 12,
         Var = 13,
         Assigns = 14,
+        Add = 15
     }
 
     /// <summary>
@@ -30,6 +28,12 @@ namespace MiScript.Models
     [ProtoContract]
     public struct Token
     {
+        public Token(Tokens tokenType, string value = null)
+        {
+            TokenType = tokenType;
+            Value = value;
+        }
+
         /// <summary>
         /// Type of the token.
         /// </summary>
@@ -52,6 +56,24 @@ namespace MiScript.Models
             }
 
             return $"[{value}]";
+        }
+
+        private bool Equals(Token other)
+        {
+            return TokenType == other.TokenType && Value == other.Value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Token other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return ((int) TokenType * 397) ^ (Value != null ? Value.GetHashCode() : 0);
+            }
         }
     }
 }

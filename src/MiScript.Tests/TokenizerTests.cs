@@ -12,8 +12,8 @@ namespace MiScript.Tests
         [Fact]
         public void TokenizerParse()
         {
-            var script = "if $author.username = \"user\" then say \"hello\" else say \"no\" end";
-            var expectedTokens = new List<Token>()
+            const string script = "if $author.username = \"user\" then say \"hello\" else say \"no\" end";
+            var expectedTokens = new List<Token>
             {
                 new Token { TokenType = Tokens.If },
                 new Token { TokenType = Tokens.Argument, Value = "author.username" },
@@ -25,18 +25,34 @@ namespace MiScript.Tests
                 new Token { TokenType = Tokens.Else},
                 new Token { TokenType = Tokens.Name, Value = "say" },
                 new Token { TokenType = Tokens.String, Value = "no" },
-                new Token { TokenType = Tokens.End},
+                new Token { TokenType = Tokens.End },
             };
 
-            var tokens = new Tokenizer().Tokenize(script);
-
-            Assert.Equal(expectedTokens.Count, tokens.Count());
-
-            for(int i = 0; i < tokens.Count(); i++)
+            Assert.Equal(expectedTokens, Tokenizer.Parse(script).Tokens);
+        }
+        
+        [Fact]
+        public void TokenizerNewLineString()
+        {
+            const string script = "say \"test\ntest\"";
+            var expectedTokens = new List<Token>
             {
-                Assert.Equal(expectedTokens[i].TokenType, tokens.ElementAt(i).TokenType);
-                Assert.Equal(expectedTokens[i].Value, tokens.ElementAt(i).Value);
-            }
+                new Token { TokenType = Tokens.Name, Value = "say" },
+                new Token { TokenType = Tokens.String, Value = "test\ntest" }
+            };
+
+            Assert.Equal(expectedTokens, Tokenizer.Parse(script).Tokens);
+        }
+        
+        [Fact]
+        public void TokenizerTestWarning()
+        {
+            const string script = "\"say Hello\"";
+
+            var warnings = Tokenizer.Parse(script).Warnings;
+            
+            Assert.NotEmpty(warnings);
+            Assert.Equal(new SourceRange(1, 0, 1, script.Length), warnings[0].Range);
         }
     }
 }
