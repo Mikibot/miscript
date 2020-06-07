@@ -37,27 +37,32 @@ namespace MiScript.Models
 
             foreach(var t in tokens)
             {
-                int? index = null;
+                byte? valueIndex = null;
                 if (t.Value != null)
                 {
-                    index = valueCollection.IndexOf(t.Value);
+                    var index = valueCollection.IndexOf(t.Value);
+                    
                     if (index == -1)
                     {
-                        index = valueCollection.Count;
+                        valueIndex = (byte) valueCollection.Count;
                         valueCollection.Add(t.Value);
+                    }
+                    else
+                    {
+                        valueIndex = (byte) index;
                     }
                 }
 
-                tokenCollection.Add(new PackedToken { token = t.TokenType, valueIndex = (byte?)index });
+                tokenCollection.Add(new PackedToken { token = t.TokenType, valueIndex = valueIndex });
             }
             return new ScriptPackage { strValues = valueCollection.ToArray(), tokens = tokenCollection.ToArray() };
         }
-        public static IEnumerable<Token> Unpack(ScriptPackage package)
+        public static List<Token> Unpack(ScriptPackage package)
         {
             List<Token> tokenCollection = new List<Token>();
             foreach(var token in package.tokens)
             {
-                tokenCollection.Add(new Token { TokenType = token.token, Value = token.valueIndex.HasValue ? package.strValues[token.valueIndex.Value] : "" });
+                tokenCollection.Add(new Token(token.token, token.valueIndex.HasValue ? package.strValues[token.valueIndex.Value] : ""));
             }
             return tokenCollection;
         }
@@ -65,19 +70,42 @@ namespace MiScript.Models
         public static string ToString(ScriptPackage pack, bool pretty = false)
         {
             StringBuilder b = new StringBuilder();
-            int indent = 0;
+            var indent = 0;
+            var isNewLine = true;
 
             foreach(var token in pack.tokens)
             {
+                if (isNewLine)
+                {
+                    if (pretty && indent > 0)
+                    {
+                        b.Append(new string(' ', indent));
+                    }
+
+                    isNewLine = false;
+                }
+                else
+                {
+                    b.Append(' ');
+                }
+                
                 switch (token.token)
                 {
                     case Tokens.Then:
                     {
                         indent += 2;
                         b.AppendLine(token.token.ToString().ToLowerInvariant());
+                        isNewLine = true;
+                    } break;
+                    
+                    case Tokens.Else:
+                    {
+                        b.Length -= 2;
+                        b.AppendLine();
+                        b.AppendLine(token.token.ToString().ToLowerInvariant());
+                        isNewLine = true;
                     } break;
 
-                    case Tokens.Else:
                     case Tokens.Stop:
                     case Tokens.If:
                     {
@@ -95,11 +123,17 @@ namespace MiScript.Models
                     } break;
 
                     case Tokens.Name:
-                    case Tokens.String:
                     case Tokens.Number:
                     case Tokens.Boolean:
                     {
                         b.Append(pack.strValues[token.valueIndex.Value]);
+                    } break;
+                    
+                    case Tokens.String:
+                    {
+                        b.Append('"');
+                        b.Append(pack.strValues[token.valueIndex.Value]);
+                        b.Append('"');
                     } break;
 
                     case Tokens.Add:
