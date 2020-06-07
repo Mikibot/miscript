@@ -45,7 +45,7 @@ namespace MiScript.Models
         /// Value of the token if needed.
         /// </summary>
         [ProtoMember(2)]
-        public string Value { get; }
+        public string? Value { get; }
 
         public override string ToString()
         {

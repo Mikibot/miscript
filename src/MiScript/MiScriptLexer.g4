@@ -1,5 +1,8 @@
 lexer grammar MiScriptLexer;
 WhiteSpaces: [\t\u000B\u000C\u0020\u00A0]+ -> channel(HIDDEN);
+LineTerminator: [\r\n\u2028\u2029] -> channel(HIDDEN);
+MultiLineComment	: '/*' .*? '*/' -> channel(HIDDEN);
+SingleLineComment	: '//' ~[\r\n\u2028\u2029]* -> channel(HIDDEN);
 Dot: '.';
 If: 'if';
 End: 'end';
@@ -11,8 +14,11 @@ Equal: '=';
 Do: 'do';
 NotEqual: '!=';
 Set: 'set';
+ParenOpen: '(';
+ParenClose: ')';
 BeginString: '"' -> pushMode(STRING_MODE);
 IdentifierStart: '$';
+SemiColon: ';';
 Identifier: [a-zA-Z_\\]+;
 EndExpr: ']' -> popMode;
 
@@ -20,7 +26,7 @@ mode STRING_MODE;
 EscapeInline: '$$';
 InlineExpr: '$' -> pushMode(STRING_EXPR);
 EndString: '"' -> popMode;
-Text: ~('"' | '$')+;
+StringText: ~('"' | '$')+;
 
 mode STRING_EXPR;
 StrIdentifier: [a-zA-Z_\\]+ -> type(Identifier);

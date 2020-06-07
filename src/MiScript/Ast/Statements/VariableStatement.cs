@@ -4,7 +4,7 @@ namespace MiScript.Ast
 {
     public class VariableStatement : Statement
     {
-        public VariableStatement(SourceRange range, string identifier, Expression initializer = null) : base(range)
+        public VariableStatement(SourceRange range, string identifier, Expression? initializer = null) : base(range)
         {
             Identifier = identifier;
             Initializer = initializer;
@@ -12,7 +12,7 @@ namespace MiScript.Ast
         
         public string Identifier { get; }
         
-        public Expression Initializer { get; }
+        public Expression? Initializer { get; }
 
         public override void Compile(CompileContext context)
         {

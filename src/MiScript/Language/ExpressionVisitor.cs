@@ -57,7 +57,7 @@ namespace MiScript.Language
                 }
                 else
                 {
-                    current = new StringExpression(part, part.GetText());
+                    current = new StringExpression(part, part.GetText(), part.GetText());
                 }
 
                 if (expression == null)
@@ -69,8 +69,20 @@ namespace MiScript.Language
                     expression = new BinaryExpression(current, BinaryType.Add, expression, current);
                 }
             }
-            
-            return expression ?? new StringExpression(context, string.Empty);
+
+            if (expression is StringExpression stringExpression)
+            {
+                return new StringExpression(context, stringExpression.Value, context.GetText());
+            }
+
+            return new TemplateStringExpression(context, expression, context.GetText());
+        }
+        
+        public override Expression VisitCallExpression(MiScriptParser.CallExpressionContext context)
+        {
+            return new CallExpression(context,
+                context.functionName().GetText(),
+                context.expression().Visit(this));
         }
     }
 }

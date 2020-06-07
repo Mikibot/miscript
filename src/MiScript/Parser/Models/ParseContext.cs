@@ -5,6 +5,24 @@ using System.Linq;
 
 namespace MiScript.Parser.Models
 {
+    public readonly struct CallContext
+    {
+        private readonly ParseContext _context;
+
+        public CallContext(ParseContext context, IReadOnlyList<string> arguments)
+        {
+            _context = context;
+            Arguments = arguments;
+        }
+        
+        public IReadOnlyList<string> Arguments { get; }
+
+        public void AddResponse(string content)
+        {
+            _context.responses.Add(content);
+        }
+    }
+    
     public class ParseContext
     {
         internal Dictionary<string, object> contextVariables;

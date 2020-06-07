@@ -1,0 +1,7 @@
+﻿--SCRIPT--
+var var = upper "foo"
+say $var
+say upper("bar")
+--EXPECT--
+FOO
+BAR

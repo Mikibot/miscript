@@ -5,7 +5,10 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using MiScript.Functions;
 using MiScript.Models;
+using MiScript.Providers;
 using Xunit;
 using Xunit.Abstractions;
 using YamlDotNet.RepresentationModel;
@@ -21,23 +24,41 @@ namespace MiScript.Tests
             _output = output;
         }
         
-        [Theory]
-        [MemberData(nameof(GetData))]
-        public void Run(ScriptTestData test)
+        [Fact]
+        public Task RunSingle()
         {
-            RunTest(test, false);
+            var assembly = typeof(RunTests).Assembly;
+            var sb = new StringBuilder();
+
+            return RunTest(LoadScript(assembly, "MiScript.Tests.Basic.004_Warning.mst", sb), false);
         }
         
         [Theory]
         [MemberData(nameof(GetData))]
-        public void RunPacked(ScriptTestData test)
+        public Task Run(ScriptTestData test)
         {
-            RunTest(test, true);
+            return RunTest(test, false);
+        }
+        
+        [Theory]
+        [MemberData(nameof(GetData))]
+        public Task RunPacked(ScriptTestData test)
+        {
+            return RunTest(test, true);
         }
 
-        private void RunTest(ScriptTestData test, bool pack)
+        private async Task RunTest(ScriptTestData test, bool pack)
         {
-            var result = Tokenizer.Parse(test.Script);
+            var services = new ServiceCollection();
+            services.AddSingleton<IParameterProvider, StringParameterProvider>();
+            services.AddSingleton<IScriptFunction, SayFunction>();
+            services.AddSingleton<IScriptFunction, UpperFunction>();
+            services.AddSingleton<FunctionManager>();
+
+            await using var provider = services.BuildServiceProvider();
+
+            var functionManager = provider.GetRequiredService<FunctionManager>();
+            var result = Tokenizer.Parse(test.Script, functionManager);
 
             _output.WriteLine(test.Path);
             _output.WriteLine(new string('-', test.Path.Length));
@@ -52,6 +73,7 @@ namespace MiScript.Tests
                 foreach (var warning in result.Warnings)
                 {
                     _output.WriteLine("[" + warning.Range.StartLine + ":" + warning.Range.StartColumn + "] " + warning.Message);
+                    _output.WriteLine(warning.SourcePeek);
                 }
 
                 _output.WriteLine("");
@@ -100,9 +122,9 @@ namespace MiScript.Tests
 
                 context = deserializer.Deserialize<Dictionary<string, object>>(test.Model);
             }
-
-            var parser = new Parser.Parser(tokens);
-            var actual = parser.Parse(context);
+            
+            var parser = new Parser.Parser(tokens, functionManager);
+            var actual = await parser.ParseAsync(context);
 
             if (test.Expected != null)
             {

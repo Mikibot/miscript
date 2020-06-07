@@ -3,22 +3,18 @@ parser grammar MiScriptParser;
 options { tokenVocab = MiScriptLexer; }
 
 script
-    : statement*
-    ;
-
-functionParameter
-    : IdentifierStart singleIdentifier
+    : (statement eos)*
     ;
 
 blockStatement
-    : statement*
+    : (statement (eos statement)*)?
     ;
     
 statement
-    : ifStatement
+    : expressionStatement
+    | ifStatement
     | setStatement
     | callStatement
-    | expressionStatement
     ;
 
 expressionStatement
@@ -26,11 +22,16 @@ expressionStatement
     ;
 
 setStatement
-    : Var IdentifierStart? singleIdentifier (Is | Equal) (callStatement | expression)
+    : Var IdentifierStart? singleIdentifier (Is | Equal) (call | expression)
     ;
 
 callStatement
-    : singleIdentifier expression*
+    : call
+    ;
+
+call
+    : functionName ParenOpen expression* ParenClose
+    | functionName ({!lineTerminatorAhead()}? expression)*
     ;
 
 ifStatement
@@ -46,10 +47,11 @@ elseStatement
     ;
     
 expression
-    : IdentifierStart identifier        # IdentifierExpression
-    | string                            # StringExpression
-    | expression Equal expression       # EqualExpression
-    | expression NotEqual expression    # NotEqualExpression
+    : IdentifierStart identifier                        # IdentifierExpression
+    | string                                            # StringExpression
+    | expression Equal expression                       # EqualExpression
+    | expression NotEqual expression                    # NotEqualExpression
+    | functionName ParenOpen expression* ParenClose     # CallExpression
     ;
 
 identifier
@@ -61,8 +63,18 @@ memberIdentifier
     : Identifier (Dot (Identifier))+
     ;
     
+functionName
+    : Identifier
+    ;
+    
 singleIdentifier
     : Identifier
+    | Var
+    | Is
+    | Else
+    | Then
+    | End
+    | If
     ;
 
 string
@@ -70,7 +82,7 @@ string
     ;
 
 stringPart
-    : Text
+    : StringText
     | Dot
     | StartExpr
     | EndExpr
@@ -85,4 +97,10 @@ stringEscape
 stringIdentifier
     : InlineExpr StartExpr (identifier | expression) EndExpr
     | InlineExpr identifier
+    ;
+
+eos
+    : SemiColon
+    | EOF
+    | {lineTerminatorAhead()}?
     ;

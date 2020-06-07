@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Miki.Localization;
 using MiScript.Models;
 
 namespace MiScript.Ast
 {
-    public class CallStatement : Statement
+    public class CallExpression : Expression
     {
-        public CallStatement(SourceRange range, string name, IEnumerable<Expression> arguments = null) : base(range)
+        public CallExpression(SourceRange range, string name, IEnumerable<Expression> arguments = null) : base(range)
         {
             Name = name;
             Arguments = new List<Expression>(arguments ?? Enumerable.Empty<Expression>());
@@ -18,28 +19,31 @@ namespace MiScript.Ast
         
         public override void Compile(CompileContext context)
         {
+            Token token;
             int argumentCount;
-
+            
             switch (Name)
             {
-                case "say":
-                    argumentCount = 1;
-                    break;
                 case "stop":
                     context.Add(Tokens.Stop);
-                    return;
+                    token = new Token(Tokens.Stop);
+                    argumentCount = 0;
+                    break;
                 default:
-                    context.AddWarning(this, $"The method {Name} does not exists, did you mean 'say'?");
-                    return;
+                    token = new Token(Tokens.Name, Name);
+                    var information = context.FunctionManager.GetFunctionInformation(Name);
+                    argumentCount = information.Parameters.Count;
+                    break;
             }
-            
-            context.Add(Tokens.Name, Name);
-            
+
+
             if (Arguments.Count < argumentCount)
             {
-                context.AddWarning(this, $"The method {Name} takes {argumentCount}, did you forgot an argument?");
+                context.AddWarning(Arguments[^1], LocalizationKey.MissingArgument, Name, argumentCount);
                 return;
             }
+            
+            context.Add(token);
 
             for (var i = 0; i < argumentCount; i++)
             {
@@ -48,7 +52,7 @@ namespace MiScript.Ast
 
             if (Arguments.Count > argumentCount)
             {
-                context.AddWarning(this, $"The method {Name} takes {argumentCount}, did you accidentally add an argument?");
+                context.AddWarning(Arguments[^1], LocalizationKey.TooManyArguments, Name, argumentCount);
             }
         }
     }

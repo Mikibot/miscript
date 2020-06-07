@@ -1,4 +1,6 @@
-﻿namespace MiScript.Ast
+﻿using Miki.Localization;
+
+namespace MiScript.Ast
 {
     public class ExpressionStatement : Statement
     {
@@ -11,11 +13,16 @@
 
         public override void Compile(CompileContext context)
         {
-            if (Expression is StringExpression stringExpression)
+            switch (Expression)
             {
-                context.AddWarning(this, $"This string is unused, did you mean to call 'say \"{stringExpression}\"'");
+                case StringExpression stringExpression:
+                    context.AddWarning(this, LocalizationKey.UnusedString, stringExpression.RawValue);
+                    break;
+                case TemplateStringExpression stringExpression:
+                    context.AddWarning(this, LocalizationKey.UnusedString, stringExpression.RawValue);
+                    break;
             }
-            
+
             Expression.Compile(context);
         }
     }

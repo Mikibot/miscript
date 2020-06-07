@@ -4,6 +4,7 @@ using MiScript.Ast;
 
 namespace MiScript.Language
 {
+    [CLSCompliant(false)]
     public class StatementVisitor : MiScriptParserBaseVisitor<Statement>
     {
         private readonly ExpressionVisitor _expressionVisitor = new ExpressionVisitor();
@@ -42,9 +43,9 @@ namespace MiScript.Language
 
         public override Statement VisitCallStatement(MiScriptParser.CallStatementContext context)
         {
-            return new CallStatement(context, 
-                context.singleIdentifier().GetText(),
-                context.expression().Visit(_expressionVisitor));
+            return new ExpressionStatement(context, new CallExpression(context, 
+                context.call().functionName().GetText(),
+                context.call().expression().Visit(_expressionVisitor)));
         }
 
         public override Statement VisitExpressionStatement(MiScriptParser.ExpressionStatementContext context)
@@ -54,9 +55,20 @@ namespace MiScript.Language
 
         public override Statement VisitSetStatement(MiScriptParser.SetStatementContext context)
         {
-            return new VariableStatement(context,
-                context.singleIdentifier().GetText(),
-                context.expression()?.Visit(_expressionVisitor));
+            Expression? expression;
+
+            if (context.call() == null)
+            {
+                expression = context.expression()?.Visit(_expressionVisitor);
+            }
+            else
+            {
+                expression = new CallExpression(context,
+                    context.call().functionName().GetText(),
+                    context.call().expression().Visit(_expressionVisitor));
+            }
+            
+            return new VariableStatement(context, context.singleIdentifier().GetText(), expression);
         }
     }
 }

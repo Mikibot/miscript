@@ -4,19 +4,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace MiScript.Parser
 {
     public class Parser
     {
+        private readonly FunctionManager _functionManager;
         private readonly List<Token> _tokens;
         private int _index = 0;
         private bool _shouldStop = false;
         private Token _current;
 
-        public Parser(List<Token> tokens)
+        public Parser(List<Token> tokens, FunctionManager functionManager)
         {
             _tokens = tokens;
+            _functionManager = functionManager;
             UpdateCurrent();
         }
 
@@ -53,20 +56,37 @@ namespace MiScript.Parser
             return token;
         }
 
-        private string Var(ParseContext context)
+        private async ValueTask<string> VarAsync(ParseContext context)
         {
             Token token;
             string value;
             
             if (Accept(Tokens.Argument, out token))
             {
-                value = context.HasVariableOnStack(token.Value)
-                    ? context.GetVariableFromStack(token.Value)
-                    : context.contextVariables[token.Value].ToString();
+                if (context.HasVariableOnStack(token.Value))
+                {
+                    value = context.GetVariableFromStack(token.Value);
+                }
+                else if (token.Value != null)
+                {
+                    value = context.contextVariables[token.Value].ToString();
+                }
+                else
+                {
+                    value = string.Empty;
+                }
+            }
+            else if (Accept(Tokens.Name, out token))
+            {
+                value = await CallFunctionAsync(context, token.Value);
             }
             else if (Accept(Tokens.String, out token))
             {
-                if (!token.Value.Contains("$"))
+                if (token.Value == null)
+                {
+                    value = string.Empty;
+                }
+                else if (!token.Value.Contains("$"))
                 {
                     value = token.Value;
                 }
@@ -108,46 +128,46 @@ namespace MiScript.Parser
 
             if (Accept(Tokens.Equals))
             {
-                value = value == Var(context) ? "true" : "false";
+                value = value == await VarAsync(context) ? "true" : "false";
             }
             else if (Accept(Tokens.NotEquals))
             {
-                value = value != Var(context) ? "true" : "false";
+                value = value != await VarAsync(context) ? "true" : "false";
             }
             else if (Accept(Tokens.Add))
             {
-                value += Var(context);
+                value += await VarAsync(context);
             }
 
             return value;
         }
 
-        private bool Expression(ParseContext context)
+        private async ValueTask<bool> ExpressionAsync(ParseContext context)
         {
-            return Var(context) == "true";
+            return await VarAsync(context) == "true";
         }
 
-        public string Parse(Dictionary<string, object> contextVariables)
+        public async ValueTask<string> ParseAsync(Dictionary<string, object> contextVariables)
         {
             ParseContext context = new ParseContext(contextVariables);
 
             _index = 0;
             while (_index < _tokens.Count && !_shouldStop)
             {
-                Body(context);
+                await BodyAsync(context);
             }
             return string.Join("\n", context.responses);
         }
 
-        private void IfStatement(ParseContext context)
+        private async ValueTask IfStatementAsync(ParseContext context)
         {
-            if (Expression(context))
+            if (await ExpressionAsync(context))
             {
                 Expect(Tokens.Then);
                 context.PushStack();
                 while (_current.TokenType != Tokens.End && !_shouldStop)
                 {
-                    Body(context);
+                    await BodyAsync(context);
                 }
 
                 SkipToNext(Tokens.End);
@@ -158,31 +178,31 @@ namespace MiScript.Parser
                 if (Accept(Tokens.Else))
                 {
                     context.PushStack();
-                    ElseStatement(context);
+                    await ElseStatementAsync(context);
                 }
             }
         }
 
-        private void ElseStatement(ParseContext context)
+        private async ValueTask ElseStatementAsync(ParseContext context)
         {
             if (Accept(Tokens.If))
             {
-                IfStatement(context);
+                await IfStatementAsync(context);
             }
             else
             {
                 while (_current.TokenType != Tokens.End && _current.TokenType != Tokens.Else && !_shouldStop)
                 {
-                    Body(context);
+                    await BodyAsync(context);
                 }
             }
         }
 
-        private void Body(ParseContext context)
+        private async ValueTask BodyAsync(ParseContext context)
         {
             if (Accept(Tokens.If))
             {
-                IfStatement(context);
+                await IfStatementAsync(context);
                 Expect(Tokens.End);
                 context.PopStack();
             }
@@ -193,16 +213,13 @@ namespace MiScript.Parser
                 string value = null;
                 if (Accept(Tokens.Assigns))
                 {
-                    value = Var(context);
+                    value = await VarAsync(context);
                 }
                 context.CreateStackVariable(name, value);
             }
             else if (Accept(Tokens.Name, out var token))
             {
-                if (token.Value == "say")
-                {
-                    context.responses.Add(Var(context));
-                }
+                await CallFunctionAsync(context, token.Value);
             }
             else if (Accept(Tokens.Stop))
             {
@@ -212,6 +229,19 @@ namespace MiScript.Parser
             {
                 _shouldStop = true;
             }
+        }
+
+        private async ValueTask<string> CallFunctionAsync(ParseContext context, string name)
+        {
+            var function = _functionManager.GetFunctionInformation(name);
+            var arguments = new string[function.Parameters.Count];
+
+            for (var i = 0; i < arguments.Length; i++)
+            {
+                arguments[i] = await VarAsync(context);
+            }
+
+            return await _functionManager.InvokeAsync(name, context, arguments);
         }
 
         private void UpdateCurrent()

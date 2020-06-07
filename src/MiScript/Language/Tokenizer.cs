@@ -1,8 +1,10 @@
 ﻿using MiScript.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Antlr4.Runtime;
 using MiScript.Ast;
+using MiScript.Functions;
 using MiScript.Language;
 
 namespace MiScript
@@ -20,13 +22,13 @@ namespace MiScript
                 ErrorHandler = new BailErrorStrategy(),
             };
 
-            return listener.VisitScript(parser.script());;
+            return listener.VisitScript(parser.script());
         }
         
-        public static CompileContext Parse(string script)
+        public static CompileContext Parse(string script, FunctionManager? functionManager = null)
         {
             var root = CompileNode(script);
-            var context = new CompileContext();
+            var context = new CompileContext(script, functionManager ?? FunctionManager.Empty);
             
             root.Compile(context);
 
