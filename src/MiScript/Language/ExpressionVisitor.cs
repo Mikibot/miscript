@@ -70,6 +70,11 @@ namespace MiScript.Language
                 }
             }
 
+            if (expression == null)
+            {
+                return new StringExpression(context, string.Empty, context.GetText());
+            }
+
             if (expression is StringExpression stringExpression)
             {
                 return new StringExpression(context, stringExpression.Value, context.GetText());

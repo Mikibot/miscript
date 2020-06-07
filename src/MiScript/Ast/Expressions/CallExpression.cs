@@ -7,7 +7,7 @@ namespace MiScript.Ast
 {
     public class CallExpression : Expression
     {
-        public CallExpression(SourceRange range, string name, IEnumerable<Expression> arguments = null) : base(range)
+        public CallExpression(SourceRange range, string name, IEnumerable<Expression>? arguments = null) : base(range)
         {
             Name = name;
             Arguments = new List<Expression>(arguments ?? Enumerable.Empty<Expression>());

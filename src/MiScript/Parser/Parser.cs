@@ -139,7 +139,7 @@ namespace MiScript.Parser
                 value += await VarAsync(context);
             }
 
-            return value;
+            return value ?? string.Empty;
         }
 
         private async ValueTask<bool> ExpressionAsync(ParseContext context)
